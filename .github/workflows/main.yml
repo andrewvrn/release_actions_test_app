@@ -1,0 +1,57 @@
+name: Create Release with Auto-generated Release Notes
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install semver
+        run: npm install --global semver
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Determine version
+        id: determine_version
+        run: |
+          latest_tag=$(git describe --abbrev=0 --tags)
+          commit_messages=$(git log --pretty=format:"%s" ${latest_tag}..HEAD)
+          release_type="patch"
+          if echo "$commit_messages" | grep -E "(^BREAKING CHANGE)"; then
+            release_type="major"
+          elif echo "$commit_messages" | grep -E "(^feat)"; then
+            release_type="minor"
+          fi
+          echo "version=$(semver -i $release_type $latest_tag)" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: generate_release_notes
+        run: |
+          latest_tag=$(git describe --abbrev=0 --tags)
+          commit_messages=$(git log --pretty=format:"%s" ${latest_tag}..HEAD)
+          release_notes=$(echo "$commit_messages" | awk '{print "- " $0}')
+          echo "notes=$release_notes" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} #
+        with:
+          tag_name: v${{ steps.determine_version.outputs.version }}
+          release_name: Release v${{ steps.determine_version.outputs.version }}
+          body: |
+            ${{ steps.generate_release_notes.outputs.notes }}
+          draft: false
+          prerelease: false
