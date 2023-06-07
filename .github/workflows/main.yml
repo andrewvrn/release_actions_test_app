@@ -34,15 +34,7 @@ jobs:
             release_type="minor"
           fi
           echo "version=$(semver -i $release_type $latest_tag)" >> $GITHUB_OUTPUT
-
-      - name: Generate release notes
-        id: generate_release_notes
-        run: |
-          latest_tag=$(git describe --abbrev=0 --tags)
-          commit_messages=$(git log --pretty=format:"%s" ${latest_tag}..HEAD)
-          release_notes=$(echo "$commit_messages" | awk '{print "- " $0}')
-          echo "notes=$release_notes" >> $GITHUB_OUTPUT
-
+          echo "notes=$(echo "$commit_messages" | awk '{print "- " $0}')" >> $GITHUB_OUTPUT
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -52,6 +44,6 @@ jobs:
           tag_name: v${{ steps.determine_version.outputs.version }}
           release_name: Release v${{ steps.determine_version.outputs.version }}
           body: |
-            ${{ steps.generate_release_notes.outputs.notes }}
+            ${{ steps.determine_version.outputs.notes }}
           draft: false
           prerelease: false
