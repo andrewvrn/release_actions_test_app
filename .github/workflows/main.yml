@@ -28,9 +28,9 @@ jobs:
           latest_tag=$(git describe --abbrev=0 --tags)
           commit_messages=$(git log --pretty=format:"%s" ${latest_tag}..HEAD)
           release_type="patch"
-          if echo "$commit_messages" | grep -E "(^BREAKING CHANGE)"; then
+          if echo "$commit_messages" | grep -i -E "(^BREAKING CHANGE)"; then
             release_type="major"
-          elif echo "$commit_messages" | grep -E "(^feat)"; then
+          elif echo "$commit_messages" | grep -i -E "(^feat)"; then
             release_type="minor"
           fi
           echo "version=$(semver -i $release_type $latest_tag)" >> $GITHUB_OUTPUT
